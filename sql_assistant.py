@@ -11,7 +11,7 @@ VANNA_API_KEY = ""
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "1551",
+    "password": "",
     "database": "company",
     "port": 3306
 }
