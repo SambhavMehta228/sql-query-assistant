@@ -1,0 +1,243 @@
+# Database Documentation
+documentation:
+  - description: "Company Database Structure"
+    text: |
+      The company database follows a hierarchical structure with the following key relationships:
+      - The 'employees' table stores all employee information with first_name and last_name
+      - Employees have a direct reporting relationship through manager_id
+      - Each employee belongs to a department (dept_id)
+      - Departments have managers who are employees
+      - Job titles indicate organizational level (Director > Manager > Staff)
+      - The hierarchy can be determined by following manager_id relationships
+
+# Database Schema (DDL)
+ddl_statements:
+  - description: "Core table definitions"
+    statements:
+      - |
+        CREATE TABLE departments (
+          dept_id INT PRIMARY KEY,
+          dept_name VARCHAR(100) NOT NULL,
+          location VARCHAR(100),
+          manager_id INT,
+          FOREIGN KEY (manager_id) REFERENCES employees(emp_id)
+        );
+      - |
+        CREATE TABLE employees (
+          emp_id INT PRIMARY KEY,
+          first_name VARCHAR(50) NOT NULL,
+          last_name VARCHAR(50) NOT NULL,
+          manager_id INT,
+          dept_id INT,
+          job_title VARCHAR(100),
+          hire_date DATE,
+          salary DECIMAL(10,2),
+          FOREIGN KEY (manager_id) REFERENCES employees(emp_id),
+          FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+        );
+
+# Example SQL Queries
+sql_examples:
+  - description: "Basic employee queries"
+    statements:
+      - |
+        -- Get employee names
+        SELECT first_name, last_name 
+        FROM employees;
+      - |
+        -- Get employee names and departments
+        SELECT e.first_name, e.last_name, d.dept_name
+        FROM employees e
+        JOIN departments d ON e.dept_id = d.dept_id;
+      - |
+        -- Get employee names and their managers
+        SELECT e.first_name, e.last_name,
+               m.first_name as manager_first_name,
+               m.last_name as manager_last_name
+        FROM employees e
+        LEFT JOIN employees m ON e.manager_id = m.emp_id;
+
+# Question-SQL Pairs
+question_sql_pairs:
+  - category: "Organizational Structure"
+    pairs:
+      - question: "Who are all the managers in the company?"
+        sql: |
+          SELECT DISTINCT 
+            m.emp_id, 
+            m.first_name, 
+            m.last_name, 
+            m.job_title,
+            d.dept_name,
+            COUNT(e.emp_id) as direct_reports
+          FROM employees m
+          LEFT JOIN employees e ON m.emp_id = e.manager_id
+          LEFT JOIN departments d ON m.dept_id = d.dept_id
+          WHERE m.job_title LIKE '%Manager%'
+             OR m.job_title LIKE '%Director%'
+          GROUP BY 
+            m.emp_id, m.first_name, m.last_name, 
+            m.job_title, d.dept_name
+          ORDER BY d.dept_name, m.job_title;
+
+      - question: "Show me the department hierarchy"
+        sql: |
+          WITH RECURSIVE OrgHierarchy AS (
+            -- Start with department heads (no manager or highest level)
+            SELECT 
+              e.emp_id,
+              e.first_name,
+              e.last_name,
+              e.manager_id,
+              e.dept_id,
+              e.job_title,
+              d.dept_name,
+              0 as level,
+              CAST(CONCAT(e.first_name, ' ', e.last_name) AS CHAR(1000)) as path
+            FROM employees e
+            JOIN departments d ON e.dept_id = d.dept_id
+            WHERE e.job_title LIKE '%Director%'
+            
+            UNION ALL
+            
+            -- Add all subordinates
+            SELECT 
+              e.emp_id,
+              e.first_name,
+              e.last_name,
+              e.manager_id,
+              e.dept_id,
+              e.job_title,
+              d.dept_name,
+              oh.level + 1,
+              CAST(CONCAT(oh.path, ' > ', e.first_name, ' ', e.last_name) AS CHAR(1000)) as path
+            FROM employees e
+            JOIN departments d ON e.dept_id = d.dept_id
+            JOIN OrgHierarchy oh ON e.manager_id = oh.emp_id
+          )
+          SELECT 
+            dept_name,
+            CONCAT(REPEAT('  ', level), first_name, ' ', last_name) as employee_name,
+            job_title,
+            level as hierarchy_level,
+            path as reporting_chain
+          FROM OrgHierarchy
+          ORDER BY dept_name, level, last_name;
+
+      - question: "Show me the reporting structure in the IT department"
+        sql: |
+          WITH RECURSIVE DeptHierarchy AS (
+            SELECT 
+              e.emp_id,
+              e.first_name,
+              e.last_name,
+              e.manager_id,
+              e.job_title,
+              0 as level
+            FROM employees e
+            JOIN departments d ON e.dept_id = d.dept_id
+            WHERE d.dept_name = 'IT'
+              AND (e.manager_id IS NULL OR e.job_title LIKE '%Director%')
+            
+            UNION ALL
+            
+            SELECT 
+              e.emp_id,
+              e.first_name,
+              e.last_name,
+              e.manager_id,
+              e.job_title,
+              dh.level + 1
+            FROM employees e
+            JOIN DeptHierarchy dh ON e.manager_id = dh.emp_id
+          )
+          SELECT 
+            CONCAT(REPEAT('    ', level), first_name, ' ', last_name) as employee,
+            job_title,
+            level as org_level,
+            (SELECT COUNT(*) FROM employees WHERE manager_id = dh.emp_id) as direct_reports
+          FROM DeptHierarchy dh
+          ORDER BY level, last_name;
+
+# Performance Analysis
+performance_analysis:
+  - description: "Generate a comprehensive employee performance report"
+    sql: |
+      WITH 
+        DeptAvgSalary AS (
+          SELECT 
+            dept_id,
+            AVG(salary) as dept_avg_salary
+          FROM employees
+          GROUP BY dept_id
+        ),
+        ProjectMetrics AS (
+          SELECT 
+            pa.emp_id,
+            SUM(pa.hours_allocated) as total_hours,
+            COUNT(DISTINCT p.project_id) as total_projects,
+            SUM(CASE WHEN p.status = 'Completed' THEN 1 ELSE 0 END) as completed_projects,
+            ROUND(AVG(pa.performance_rating), 2) as avg_project_rating
+          FROM project_assignments pa
+          JOIN projects p ON pa.project_id = p.project_id
+          GROUP BY pa.emp_id
+        ),
+        PerformanceScores AS (
+          SELECT 
+            e.emp_id,
+            e.first_name,
+            e.last_name,
+            e.dept_id,
+            e.salary,
+            d.dept_name,
+            das.dept_avg_salary,
+            pm.total_hours,
+            pm.total_projects,
+            pm.completed_projects,
+            ROUND(pm.completed_projects * 100.0 / NULLIF(pm.total_projects, 0), 2) as completion_rate,
+            pm.avg_project_rating,
+            COUNT(dep.dependent_id) as num_dependents,
+            ROUND((e.salary * 100.0 / NULLIF(das.dept_avg_salary, 0)), 2) as salary_ratio_score,
+            ROUND((pm.total_hours * 100.0 / NULLIF((SELECT MAX(total_hours) FROM ProjectMetrics), 0)), 2) as hours_score,
+            ROUND((pm.avg_project_rating * 20), 2) as rating_score
+          FROM employees e
+          JOIN departments d ON e.dept_id = d.dept_id
+          JOIN DeptAvgSalary das ON e.dept_id = das.dept_id
+          LEFT JOIN ProjectMetrics pm ON e.emp_id = pm.emp_id
+          LEFT JOIN dependents dep ON e.emp_id = dep.emp_id
+          GROUP BY 
+            e.emp_id, e.first_name, e.last_name, e.dept_id, e.salary,
+            d.dept_name, das.dept_avg_salary, pm.total_hours,
+            pm.total_projects, pm.completed_projects, pm.avg_project_rating
+        )
+      SELECT 
+        emp_id,
+        first_name,
+        last_name,
+        dept_name,
+        salary,
+        dept_avg_salary,
+        ROUND((salary - dept_avg_salary), 2) as salary_difference,
+        total_hours,
+        total_projects,
+        completed_projects,
+        completion_rate,
+        avg_project_rating,
+        num_dependents,
+        ROUND(
+          (
+            (salary_ratio_score * 0.25) +
+            (hours_score * 0.35) +
+            (rating_score * 0.40)
+          ),
+          2
+        ) as performance_score,
+        CASE 
+          WHEN (salary_ratio_score * 0.25 + hours_score * 0.35 + rating_score * 0.40) >= 90 THEN 'Exceptional'
+          WHEN (salary_ratio_score * 0.25 + hours_score * 0.35 + rating_score * 0.40) >= 75 THEN 'Exceeds Expectations'
+          WHEN (salary_ratio_score * 0.25 + hours_score * 0.35 + rating_score * 0.40) >= 60 THEN 'Meets Expectations'
+          WHEN (salary_ratio_score * 0.25 + hours_score * 0.35 + rating_score * 0.40) >= 45 THEN 'Needs Improvement'
+          ELSE 'Unsatisfactory'
+        END as performance_category
+      FROM PerformanceScores
+      ORDER BY performance_score DESC; 
