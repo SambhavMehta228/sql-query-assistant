@@ -16,7 +16,7 @@ import hashlib
 
 # Configuration
 VANNA_API_KEY = ""
-MODEL_NAME = "zambhavvziiii"  # Fixed model name linked to API key
+MODEL_NAME = ""  # Fixed model name linked to API key
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
@@ -349,7 +349,7 @@ class SQLAssistant(VannaDefault):
             # Mark as trained only if we successfully processed some examples
             if len(self._training_examples) > 0:
                 self.mark_model_trained()
-                return True
+            return True
             return False
 
         except Exception as e:
@@ -422,10 +422,10 @@ class SQLAssistant(VannaDefault):
 def main():
     """Main application entry point."""
     st.title("🚀 SQL Query Assistant")
-    
+
     # Initialize SQL Assistant
     assistant = SQLAssistant(api_key=VANNA_API_KEY)
-    
+
     # Setup database connection
     if not assistant.setup_database():
         st.error("❌ Failed to connect to database")
@@ -433,25 +433,25 @@ def main():
 
     # Main query interface
     user_question = st.text_input("💭 What would you like to know?")
-    
+
     if user_question:
         with st.spinner("🔄 Generating SQL query..."):
             sql_query = assistant.get_sql_for_question(user_question)
             
-        if sql_query:
-            st.code(sql_query, language="sql")
-            
-            if st.button("▶️ Run Query"):
-                with st.spinner("⚡ Executing query..."):
-                    try:
-                        results = assistant.execute_query(sql_query)
-                        if isinstance(results, pd.DataFrame):
-                            st.success("✅ Query executed successfully!")
-                            st.dataframe(results)
-                        else:
-                            st.info("ℹ️ No results returned.")
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+            if sql_query:
+                st.code(sql_query, language="sql")
+                
+        if st.button("▶️ Run Query"):
+            with st.spinner("⚡ Executing query..."):
+                try:
+                    results = assistant.execute_query(sql_query)
+                    if isinstance(results, pd.DataFrame):
+                        st.success("✅ Query executed successfully!")
+                        st.dataframe(results)
+                    else:
+                        st.info("ℹ️ No results returned.")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
 
 if __name__ == "__main__":
-    main() 
+    main()
