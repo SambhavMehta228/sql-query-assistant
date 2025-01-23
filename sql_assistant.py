@@ -15,8 +15,8 @@ import time
 import hashlib
 
 # Configuration
-VANNA_API_KEY = ""
-MODEL_NAME = ""  # Fixed model name linked to API key
+VANNA_API_KEY = "966253fadc5b4934959c2d6d43dc119e"
+MODEL_NAME = "sqlcompanybot"  # Fixed model name linked to API key
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
@@ -419,9 +419,58 @@ class SQLAssistant(VannaDefault):
             st.error(f"Error fetching schema: {str(e)}")
             return None
 
+def initialize_session_state():
+    """Initialize session state variables for chat interface."""
+    if 'messages' not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hey! I'm your SQL Assistant. How can I help you today?"}
+        ]
+    if 'sql_queries' not in st.session_state:
+        st.session_state.sql_queries = {}
+
+def display_message(message, is_user=False):
+    """Display a single message in the chat interface."""
+    with st.chat_message("user" if is_user else "assistant"):
+        st.write(message["content"])
+        if not is_user and "sql" in message:
+            with st.expander("📊 View SQL Query"):
+                st.code(message["sql"], language="sql")
+        if not is_user and "results" in message:
+            with st.expander("📈 View Results"):
+                st.dataframe(message["results"])
+                if isinstance(message["results"], pd.DataFrame) and not message["results"].empty:
+                    csv = message["results"].to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download CSV",
+                        data=csv,
+                        file_name="query_results.csv",
+                        mime="text/csv"
+                    )
+
 def main():
-    """Main application entry point."""
-    st.title("🚀 SQL Query Assistant")
+    """Main application entry point with enhanced chat interface."""
+    st.set_page_config(page_title="SQLWizard", page_icon="🤖", layout="wide")
+
+    # Load external CSS
+    with open('static/styles.css') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+    # Header with actions
+    col1, col2, col3 = st.columns([2,8,2])
+    with col1:
+        if st.button("🆕 New Chat"):
+            st.session_state.messages = [
+                {"role": "assistant", "content": "Hey! I'm your SQL Assistant. How can I help you today?"}
+            ]
+            st.session_state.sql_queries = {}
+            st.experimental_rerun()
+    with col2:
+        st.title("🤖 SQLWizard")
+    with col3:
+        if st.button("⚙️ Settings"):
+            st.sidebar.title("Settings")
+            st.sidebar.toggle("Dark Mode")
+            st.sidebar.toggle("Show SQL Queries")
 
     # Initialize SQL Assistant
     assistant = SQLAssistant(api_key=VANNA_API_KEY)
@@ -431,27 +480,54 @@ def main():
         st.error("❌ Failed to connect to database")
         return
 
-    # Main query interface
-    user_question = st.text_input("💭 What would you like to know?")
+    # Initialize session state
+    initialize_session_state()
 
-    if user_question:
-        with st.spinner("🔄 Generating SQL query..."):
-            sql_query = assistant.get_sql_for_question(user_question)
-            
+    # Display chat messages
+    for message in st.session_state.messages:
+        display_message(message, message["role"] == "user")
+
+    # Chat input
+    if prompt := st.chat_input("💭 Ask me anything about your data..."):
+        # Add user message
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        display_message(st.session_state.messages[-1], True)
+
+        # Generate response
+        with st.spinner("🤔 Thinking..."):
+            # Generate SQL
+            sql_query = assistant.get_sql_for_question(prompt)
             if sql_query:
-                st.code(sql_query, language="sql")
-                
-        if st.button("▶️ Run Query"):
-            with st.spinner("⚡ Executing query..."):
                 try:
-                    results = assistant.execute_query(sql_query)
-                    if isinstance(results, pd.DataFrame):
-                        st.success("✅ Query executed successfully!")
-                        st.dataframe(results)
-                    else:
-                        st.info("ℹ️ No results returned.")
+                    # Execute query
+                    with st.spinner("⚡ Executing query..."):
+                        results = assistant.execute_query(sql_query)
+                        
+                    # Add assistant response
+                    response = {
+                        "role": "assistant",
+                        "content": "Here's what I found:",
+                        "sql": sql_query,
+                        "results": results
+                    }
+                    st.session_state.messages.append(response)
+                    display_message(response)
+                    
                 except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
+                    error_response = {
+                        "role": "assistant",
+                        "content": f"❌ Error executing query: {str(e)}",
+                        "sql": sql_query
+                    }
+                    st.session_state.messages.append(error_response)
+                    display_message(error_response)
+            else:
+                error_response = {
+                    "role": "assistant",
+                    "content": "I couldn't generate a SQL query for your question. Could you please rephrase it?"
+                }
+                st.session_state.messages.append(error_response)
+                display_message(error_response)
 
 if __name__ == "__main__":
     main()
