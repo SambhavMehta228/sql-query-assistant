@@ -1,96 +1,129 @@
-# 🚀 SQL Query Assistant
+# SQLWizard - Natural Language SQL Assistant 🤖
 
-A powerful natural language to SQL converter powered by Vanna.AI! Ask questions in plain English and get instant SQL queries and results from your MySQL database.
+A modern, AI-powered SQL query assistant that converts natural language questions into SQL queries. Built with Streamlit and Vanna.AI, it provides an intuitive chat interface for database interactions.
 
-## ✨ Features
+![SQLWizard Interface](interface.png)
 
-- 🗣️ Natural language to SQL conversion - just ask questions in plain English!
-- 🤖 Smart AI model that learns from your database schema
-- ⚡ Real-time query generation and execution
-- 📊 Clean data visualization
-- 🎯 Support for complex queries including JOINs and aggregations
-- 🛡️ Built-in error handling and user feedback
+## Features ✨
 
-## 🛠️ Prerequisites
+- Natural language to SQL conversion
+- Interactive chat interface
+- Real-time query execution
+- Query result visualization
+- CSV export functionality
+- Persistent model training
+- Schema verification
+- Dark mode support
 
-- Python 3.7+
+## Tech Stack 🛠️
+
+- **Frontend**: Streamlit
+- **Backend**: Python
+- **Database**: MySQL
+- **AI Model**: Vanna.AI
+- **ORM**: SQLAlchemy
+- **Data Processing**: Pandas
+
+## Prerequisites 📋
+
+- Python 3.8+
 - MySQL Server
-- Company database setup
+- Vanna.AI API Key
 
-## 🔧 Installation
+## Installation 🚀
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/SambhavMehta228/sql-query-assistant.git
-cd sql-query-assistant
+git clone <repository-url>
+cd SQLWizard
 ```
 
-2. Install required packages:
+2. Install dependencies:
 ```bash
-pip install streamlit vanna sqlalchemy pymysql pandas
+pip install -r requirements.txt
 ```
 
-3. Configure your database:
-   - Make sure MySQL is running
-   - Create a database named 'company_v2'
-   - Update DB_CONFIG in sql_assistant.py if needed
+3. Configure database:
+- Create a MySQL database named `company_v2`
+- Update the database configuration in `sql_assistant.py`:
+```python
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "your_password",
+    "dbname": "company_v2",
+    "port": 3306
+}
+```
 
-4. Set up your Vanna API key:
-   - Get your API key from Vanna.AI
-   - Add it to the VANNA_API_KEY variable in sql_assistant.py
+4. Set up your Vanna.AI API key:
+- Get your API key from [Vanna.AI](https://vanna.ai)
+- Update the API key in `sql_assistant.py`:
+```python
+VANNA_API_KEY = "your_api_key"
+```
 
-## 🚀 Usage
+## Usage 💡
 
-1. Run the application:
+1. Start the application:
 ```bash
 streamlit run sql_assistant.py
 ```
 
-2. Open your web browser and navigate to http://localhost:8501
+2. Access the web interface at `http://localhost:8501`
 
-3. Start asking questions! Examples:
-   - "How many employees are there in each department?"
-   - "Show me the highest paid employees"
-   - "List all projects and their team sizes"
+3. Start asking questions in natural language:
+- "Show me all employees in the IT department"
+- "What is the average salary by department?"
+- "List all projects with their managers"
 
-## 📊 Database Structure
+## Features in Detail 🔍
 
-The application works with a company database that includes:
-- Employees
-- Departments
-- Job Grades
-- Projects
-- Skills
-- Performance Reviews
+### Natural Language Processing
+- Converts plain English questions to SQL queries
+- Handles complex queries and joins
+- Learns from usage patterns
 
-## 🌟 Features in Detail
+### Interactive Interface
+- Chat-like conversation flow
+- Real-time query generation
+- Expandable SQL query view
+- Interactive results display
 
-1. **Smart Query Generation**
-   - Converts natural language to SQL
-   - Handles complex table relationships
-   - Supports various query types
+### Data Management
+- Automatic schema verification
+- Query result pagination
+- CSV export functionality
+- Error handling and feedback
 
-2. **Secure Database Integration**
-   - Safe MySQL connection
-   - Real-time query execution
-   - Results in clean tabular format
+### Model Training
+- Persistent training state
+- Incremental learning
+- Schema-aware training
+- Example-based training
 
-3. **User-Friendly Interface**
-   - 💭 Intuitive question input
-   - ⚡ Real-time query generation
-   - ✨ Interactive results display
-   - 🎯 Clear success/error messages
+## Project Structure 📁
 
-## 🤝 Contributing
+```
+SQLWizard/
+├── sql_assistant.py     # Main application file
+├── static/
+│   └── styles.css      # CSS styling
+├── training_examples.yaml   # Training data
+├── model_state.json    # Model state tracking
+└── README.md          # Documentation
+```
 
-Feel free to submit issues and enhancement requests!
+## Contributing 🤝
 
-## 📝 License
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-[MIT License](LICENSE)
+## License 📄
 
-## 🙏 Acknowledgments
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-- Built with [Vanna.AI](https://vanna.ai/)
-- Powered by Streamlit
-- Uses SQLAlchemy for database operations
+## Acknowledgments 🙏
+
+- [Vanna.AI](https://vanna.ai) for the natural language processing
+- [Streamlit](https://streamlit.io) for the web interface
+- All contributors and users of this project
