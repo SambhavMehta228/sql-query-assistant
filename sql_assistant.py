@@ -15,7 +15,7 @@ import time
 import hashlib
 
 # Configuration
-VANNA_API_KEY = "966253fadc5b4934959c2d6d43dc119e"
+VANNA_API_KEY = ""
 MODEL_NAME = "sqlcompanybot"  # Fixed model name linked to API key
 DB_CONFIG = {
     "host": "localhost",
